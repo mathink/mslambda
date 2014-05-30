@@ -356,7 +356,7 @@ Notation "m !P n" := (orthbP m n: reflect (m!n) (orthb m n))
 
 Section Lambda.
 
-  Parameter (T: eqType).
+  Variable (T: eqType).
 
   Inductive sexp: Type :=
   | free (x: T)
@@ -694,8 +694,8 @@ End Lambda.
 
 
 (* lambda is subType of sexp *)
-Structure lambda := Lam { term : sexp; _: isLb term }.
-Canonical lambda_subType := Eval hnf in [subType for term].
+Structure lambda T := Lam { term : sexp T; _: isLb term }.
+Canonical lambda_subType T := Eval hnf in [subType for @term T].
 Check lambda.
 
 
@@ -707,4 +707,3 @@ Notation "m # s" := (well_formed m s)
                       (at level 70, no associativity): map_scope.
 Notation "m #P s" := (wfbP m s: reflect (m # s) (wfb m s))
                        (at level 70, no associativity): map_scope.
-
