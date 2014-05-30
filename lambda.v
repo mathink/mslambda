@@ -689,15 +689,23 @@ Section Lambda.
       + by right; move=> H; inversion H; subst.
   Qed.
   
+  Structure lambda := Lam { term : sexp ; _: isLb term }.
+  Canonical lambda_subType := Eval hnf in [subType for @term].
+  Local Coercion term: lambda >-> sexp.
+  Check lambda.
 
+  Lemma lambda_is_wf (M: lambda): 0#M.
+  Proof.
+    move: M => [s Hlam] /=.
+    move: Hlam => /isLbP; elim=> [x||s1 IH1 s2 IH2|m s' IHs] /=;
+      try by constructor.
+    - move=> HisL Hwf.
+      rewrite -mapp_00_0; apply wf_mapp_app; done.
+    - move=> Hwf Hwf'; apply wf_abs; try (by constructor); try done.
+  Qed.
 End Lambda.
 
-
 (* lambda is subType of sexp *)
-Structure lambda T := Lam { term : sexp T; _: isLb term }.
-Canonical lambda_subType T := Eval hnf in [subType for @term T].
-Check lambda.
-
 
 Open Scope map_scope.
 Coercion term: lambda >-> sexp.
