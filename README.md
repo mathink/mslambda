@@ -9,17 +9,19 @@ Files
 --
 
 * [lambda.v](lambda.v)
-  * nclude types and properties to define type ${\mathbb L}$ of lambda term
-	I use reflection for definitions of ${\mathbb L}$.
-	Because Coq doesn't support induction-recursion, ${\mathbb L}$ is defined as sub-type of type ${\mathbb S}$ of sexp.
- This method is described in above paper. 
+
+  This file includes types and properties to define type ${\mathbb L}$ of lambda term.  
+  I use reflection for definitions of ${\mathbb L}$.  
+  Because Coq doesn't support induction-recursion, ${\mathbb L}$ is defined as sub-type of type ${\mathbb S}$ of sexp.  
+  This method is described in above paper. 
 
 
 TODO next
 --
 
 * implement Hole-Filling function 
-  * I'll use Monad as Computational-Context.
+
+  I'll use Monad as Computational-Context.
 
 More..
 --
