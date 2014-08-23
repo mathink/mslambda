@@ -10,7 +10,7 @@ Files
 
 * [lambda.v](lambda.v)
 
-  This file includes types and properties to define type ${\mathbb L}$ of lambda term.  
+  This file includes types and properties to define type ${\mathbb L}$ of lambda expression.  
   I use reflection for definitions of ${\mathbb L}$.  
   Because Coq doesn't support induction-recursion, ${\mathbb L}$ is defined as sub-type of type ${\mathbb S}$ of sexp.  
   This method is described in above paper. 
