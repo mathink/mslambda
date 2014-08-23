@@ -15,310 +15,300 @@ Open Scope map_scope.
    ** Define map from map1
        to realize abstraction mechanism
    *)
-  Inductive map1: Set :=
-  | binder
-  | minl (m: map1)
-  | minr (m: map1)
-  | mcons (m n: map1).
-  Notation "1" := binder.
+Inductive map1: Set :=
+| binder
+| minl (m: map1)
+| minr (m: map1)
+| mcons (m n: map1).
+Notation "1" := binder.
 
-  Inductive map: Set :=
-  | mnull
-  | mmap (m: map1).
-  Local Coercion mmap: map1 >-> map.
-  Notation "0" := mnull.
+Inductive map: Set :=
+| mnull
+| mmap (m: map1).
+Coercion mmap: map1 >-> map.
+Notation "0" := mnull.
 
-  (* eqType declaration(s) *)
-  Fixpoint eq_map1 (x y: map1): bool :=
-    match x, y with
-      | 1, 1 => true
-      | minl m, minl n | minr m, minr n => eq_map1 m n
-      | mcons m m', mcons n n' => eq_map1 m n && eq_map1 m' n'
-      | _, _ => false
-    end.
+(* eqType declaration(s) *)
+Fixpoint eq_map1 (x y: map1): bool :=
+  match x, y with
+    | 1, 1 => true
+    | minl m, minl n | minr m, minr n => eq_map1 m n
+    | mcons m m', mcons n n' => eq_map1 m n && eq_map1 m' n'
+    | _, _ => false
+  end.
+Functional Scheme eq_map1_ind := Induction for eq_map1 Sort Prop.
+Functional Scheme eq_map1_rect := Induction for eq_map1 Sort Type.
 
-  Definition eq_map (x y: map): bool :=
-    match x, y with
-      | mnull, mnull => true
-      | mmap m, mmap n => eq_map1 m n
-      | _, _ => false
-    end.
+Definition eq_map (x y: map): bool :=
+  match x, y with
+    | mnull, mnull => true
+    | mmap m, mmap n => eq_map1 m n
+    | _, _ => false
+  end.
+Functional Scheme eq_map_ind := Induction for eq_map Sort Prop.
+Functional Scheme eq_map_rect := Induction for eq_map Sort Type.
 
-  Lemma eq_map1P: Equality.axiom eq_map1.
-  Proof.
-    rewrite /Equality.axiom.
-    elim=> [| m IHm | m IHm | m IHm n IHn] //=;
-    elim=> [| m' IHm'| m' IHm'| m' IHm' n' IHn'] //=;
-      try by constructor.
-    - by move: (IHm m') => [ -> | Hneq] /=; [ left | right; case ].
-    - by move: (IHm m') => [ -> | Hneq] /=; [ left | right; case ].
-    - move: (IHm m') => [ -> | Hneq] /=; last by right; case.
-        by move: (IHn n') => [ -> | Hneq] /=; [ left | right; case ].
-  Defined.
+Lemma eq_map1P: Equality.axiom eq_map1.
+Proof.
+  rewrite /Equality.axiom => m n.
+  elim/eq_map1_rect: m n /(eq_map1 m n) => m0 n0 /=; try by constructor.
+  - by move=> m _ n _ [->|Hneq]; [ left | right; case ].
+  - by move=> m _ n _ [->|Hneq]; [ left | right; case ].
+  - move=> m m' _ n n' _ [->|Hneq] [->|Hneq'] /=; first (by left);
+          by right; case.
+Defined.
 
-  Canonical map1_eqMixin := EqMixin eq_map1P.
-  Canonical map1_eqType := Eval hnf in EqType map1 map1_eqMixin.
+Canonical map1_eqMixin := EqMixin eq_map1P.
+Canonical map1_eqType := Eval hnf in EqType map1 map1_eqMixin.
 
-  Lemma eq_map1E: eq_map1 = eq_op.
-  Proof. by []. Qed.
+Lemma eq_map1E: eq_map1 = eq_op.
+Proof. by []. Qed.
 
-  Lemma eq_minl m n: (minl m == minl n) = (m == n).
-  Proof. by []. Qed.
+Lemma eq_minl m n: (minl m == minl n) = (m == n).
+Proof. by []. Qed.
 
-  Lemma eq_minr m n: (minr m == minr n) = (m == n).
-  Proof. by []. Qed.
+Lemma eq_minr m n: (minr m == minr n) = (m == n).
+Proof. by []. Qed.
 
-  Lemma eq_mcons m m' n n'
-  : (mcons m n == mcons m' n') = (m == m') && (n == n').
-  Proof. by []. Qed.
+Lemma eq_mcons m m' n n'
+: (mcons m n == mcons m' n') = (m == m') && (n == n').
+Proof. by []. Qed.
 
-  Lemma eq_mapP: Equality.axiom eq_map.
-  Proof.
-    rewrite /Equality.axiom.
-    move=> [| m]; move=> [| n] //=; try by constructor.
-    apply iffP with (m = n); first apply eq_map1P.
-    - by move=> -> .
-    - by case.
-  Defined.
-  
-  Canonical map_eqMixin := EqMixin eq_mapP.
-  Canonical map_eqType := Eval hnf in EqType map map_eqMixin.
+Lemma eq_mapP: Equality.axiom eq_map.
+Proof.
+  rewrite /Equality.axiom => m n.
+  elim/eq_map_rect: m n /(eq_map m n) => m0 n0 /=; try by constructor.
+  move=> m _ n _; apply iffP with (m = n); first by apply eq_map1P.
+  - by move=> -> //.
+  - by case.
+Defined.
 
-  Lemma eq_mapE: eq_map = eq_op.
-  Proof. by []. Qed.
+Canonical map_eqMixin := EqMixin eq_mapP.
+Canonical map_eqType := Eval hnf in EqType map map_eqMixin.
 
-  Lemma eq_mmap m n:
-    (mmap m == mmap n) = (m == n).
-  Proof.
-    Set Printing Coercions.
-      by rewrite inj_eq //=; last move=> x1 x2 [] //=.
-  Qed.
+Lemma eq_mapE: eq_map = eq_op.
+Proof. by []. Qed.
 
-
-  (* append map *)
-  Definition mapp (m n: map): map :=
-    match m, n with
-      | mnull, mnull => mnull
-      | mnull, mmap n1 => minr n1
-      | mmap m1, mnull => minl m1
-      | mmap m1, mmap n1 => mcons m1 n1
-    end.
-  Infix "*" := mapp (at level 40, left associativity).
-
-  Lemma mapp_injective:
-    forall (m m' n n': map),
-      m*n == m'*n' = (m == m') && (n == n').
-  Proof.
-    move=> [| m1] [| m1'] [| n1] [| n1'] //=; try by rewrite andbF.
-    rewrite andbT //=.
-  Qed.
-
-  Lemma mappm0l (m1: map1): m1*0 = minl m1.
-  Proof.
-    case: m1 => [] //=; try done.
-  Qed.    
-
-  Lemma mapp0mr (m1: map1): 0*m1 = minr m1.
-  Proof.
-    case: m1 => [] //=; try done.
-  Qed.    
-
-  Lemma mapp_mcons (m1 m2: map1): m1*m2 = mcons m1 m2.
-  Proof.
-    case: m1 => [] //=; try done.
-  Qed.    
+Lemma eq_mmap m n:
+  (mmap m == mmap n) = (m == n).
+Proof.
+    by rewrite inj_eq //=; last move=> x1 x2 [] //=.
+Qed.
 
 
-  Reserved Notation "m ! n" (at level 70, no associativity).
-  Inductive orthogonal: map -> map -> Prop :=
-  | orth_m_0 (m: map): m!0
-  | orth_0_n (n: map): 0!n
-  | orth_mapp (m n m' n': map): m!n -> m'!n' -> m*m'!n*n'
-  where "m ! n" := (orthogonal m n).
-  Notation "m ! n" := (orthogonal m n) (at level 70, no associativity).
+(* append map *)
+Definition mapp (m n: map): map :=
+  match m, n with
+    | mnull, mnull => mnull
+    | mnull, mmap n1 => minr n1
+    | mmap m1, mnull => minl m1
+    | mmap m1, mmap n1 => mcons m1 n1
+  end.
+Functional Scheme mapp_ind := Induction for mapp Sort Prop.
+Infix "*" := mapp (at level 40, left associativity).
 
-  Lemma orth_symm m n: m!n -> n!m.
-  Proof.
-    elim=> [m'|n'|m1 n1 m2 n2 Hmn1 Hnm1 Hmn2 Hnm2] /=; try by constructor.
-  Qed.                                                   
+Lemma mapp_injective (m m' n n': map):
+  m*n == m'*n' = (m == m') && (n == n').
+Proof.
+  move: m m' n n' => [| m1] [| m1'] [| n1] [| n1'] //=; try by rewrite andbF.
+  rewrite andbT //=.
+Qed.
 
-  Lemma orth_1_0 m: 1!m -> m = 0.
-  Proof.
-    move=> Horth; inversion Horth; try done.
-    destruct m0, m'; simpl in *; try discriminate.
-  Qed.
-  
+Lemma mappm0l (m1: map1): m1*0 = minl m1.
+Proof.
+  case: m1 => [] //=; try done.
+Qed.    
 
-  Fixpoint orthb1 (m n: map1) :=
-    match m, n with
-      | mcons m1 _, minl n1
-      | minl m1, mcons n1 _
-      | minl m1, minl n1 => orthb1 m1 n1
-      | mcons _ m2, minr n2
-      | minr m2, mcons _ n2
-      | minr m2, minr n2 => orthb1 m2 n2
-      | mcons m1 m2, mcons n1 n2 => orthb1 m1 n1 && orthb1 m2 n2
-      | minl _, minr _ | minr _, minl _ => true
-      | _, _ => false
-    end.
-  
-  Lemma orthb1_symm m n: orthb1 m n = orthb1 n m.
-  Proof.
-    elim: m n => [|m IHm|m IHm|m1 IHm1 m2 IHm2] n /=;
-    try by destruct n; simpl.
-    - destruct n; simpl; try done.
-        by rewrite (IHm1 n1) (IHm2 n2).
-  Qed.
+Lemma mapp0mr (m1: map1): 0*m1 = minr m1.
+Proof.
+  case: m1 => [] //=; try done.
+Qed.    
 
-  Definition orthb (m n: map) :=
-    match m, n with
-      | 0, _ => true
-      | _, 0 => true
-      | mmap m', mmap n' => orthb1 m' n'
-    end.
-  
-  Lemma orthb_symm m n: orthb m n = orthb n m.
-  Proof.
-    destruct m, n; simpl; try done.
-    apply orthb1_symm.
-  Qed.
+Lemma mapp_mcons (m1 m2: map1): m1*m2 = mcons m1 m2.
+Proof.
+  case: m1 => [] //=; try done.
+Qed.    
 
-  Lemma orthb1P (m1 n1: map1): reflect (m1!n1) (orthb1 m1 n1).
-  Proof.
-    elim: m1 n1 => [|m IHm|m IHm|m IHm n IHn] /= n1.
-    - right; move=> /orth_1_0 H; discriminate.
-    - destruct n1; move=> //=.
-      + right; move=> /orth_symm /orth_1_0 H; discriminate.
-      + case: (IHm n1) => H.
-        * left.
-          rewrite -mappm0l -mappm0l; apply orth_mapp; try done.
-          apply orth_0_n.
-        * right.
-          rewrite -mappm0l -mappm0l; move=> H'; inversion H'.
-          rewrite -mappm0l in H0.
-          rewrite -mappm0l in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-      + left.
-        rewrite -mappm0l -mapp0mr; apply orth_mapp; by constructor.
-      + case: (IHm n1_1) => H.
-        * left.
-            by rewrite -mappm0l -mapp_mcons; apply orth_mapp;
-            try by constructor.
-        * right.
-          rewrite -mappm0l -mapp_mcons; move=> H'; inversion H'.
-          rewrite -mappm0l in H0.
-          rewrite -mapp_mcons in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-    - destruct n1; move=> //=.
-      + right; move=> /orth_symm /orth_1_0 H; discriminate.
-      + left.
-        rewrite -mappm0l -mapp0mr; apply orth_mapp; by constructor.
-      + case: (IHm n1) => H.
-        * left.
-          rewrite -mapp0mr -mapp0mr; apply orth_mapp; try done.
-          apply orth_0_n.
-        * right.
-          rewrite -mapp0mr -mapp0mr; move=> H'; inversion H'.
-          rewrite -mapp0mr in H0.
-          rewrite -mapp0mr in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-      + case: (IHm n1_2) => H.
-        * left.
-            by rewrite -mapp0mr -mapp_mcons; apply orth_mapp;
-            try by constructor.
-        * right.
-          rewrite -mapp0mr -mapp_mcons; move=> H'; inversion H'.
-          rewrite -mapp0mr in H0.
-          rewrite -mapp_mcons in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-    - destruct n1; move=> //=.
-      + right; move=> /orth_symm /orth_1_0 H; discriminate.
-      + case: (IHm n1) => H.
-        * left.
-          rewrite -mappm0l -mapp_mcons; apply orth_mapp; try done.
-          apply orth_m_0.
-        * right.
-          rewrite -mappm0l -mapp_mcons; move=> H'; inversion H'.
-          rewrite -mapp_mcons in H0.
-          rewrite -mappm0l in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-      + case: (IHn n1) => H.
-        * left.
-          rewrite -mapp_mcons -mapp0mr; apply orth_mapp; try done.
-          apply orth_m_0.
-        * right.
-          rewrite -mapp_mcons -mapp0mr; move=> H'; inversion H'.
-          rewrite -mapp_mcons in H0.
-          rewrite -mapp0mr in H1.
-          move: H0 H1 => /eqP H0 /eqP H1.
-          rewrite mapp_injective in H0.
-          rewrite mapp_injective in H1.
-          move: H0 H1 =>
-          /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-          subst; done.
-      + { case: (IHm n1_1) => Hn11 /=.
-          - case: (IHn n1_2) => Hn12 /=.
-            + left.
-                by rewrite -mapp_mcons -mapp_mcons; apply orth_mapp;
-                try by constructor.
-            + right.
-              rewrite -mapp_mcons -mapp_mcons; move=> H; inversion H.
-              rewrite -mapp_mcons in H0.
-              rewrite -mapp_mcons in H1.
-              move: H0 H1 => /eqP H0 /eqP H1.
-              rewrite mapp_injective in H0.
-              rewrite mapp_injective in H1.
-              move: H0 H1 =>
-              /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-              subst; done.
-          - right.
-            rewrite -mapp_mcons -mapp_mcons; move=> H; inversion H.
-            rewrite -mapp_mcons in H0.
-            rewrite -mapp_mcons in H1.
-            move: H0 H1 => /eqP H0 /eqP H1.
-            rewrite mapp_injective in H0.
-            rewrite mapp_injective in H1.
-            move: H0 H1 =>
-            /andP [/eqP H00 /eqP H01] /andP [/eqP H10 /eqP H11].
-            subst; done. }
-  Qed.
-  Notation "m1 !1P n1" :=
-    (orthb1P m1 n1: reflect (mmap m1!mmap n1) (orthb1 m1 n1))
-      (at level 70, no associativity).
 
-  Lemma orthbP (m n: map): reflect (m!n) (orthb m n).
-  Proof.
-    case: m => [|m1] /=; first by left; constructor.
-    case: n => [|n1] /=; first by left; constructor.
-    exact (orthb1P m1 n1).
-  Qed.
-  Notation "m !P n" := (orthbP m n: reflect (m!n) (orthb m n))
-                         (at level 70, no associativity).
+Reserved Notation "m ! n" (at level 70, no associativity).
+Inductive orthogonal: map -> map -> Prop :=
+| orthm0 (m: map): m!0
+| orth0m (n: map): 0!n
+| orth_mapp (m n m' n': map): m!n -> m'!n' -> m*m'!n*n'
+where "m ! n" := (orthogonal m n).
+Notation "m ! n" := (orthogonal m n) (at level 70, no associativity).
+Hint Constructors orthogonal.
+
+Lemma orth_symm m n: m!n -> n!m.
+Proof.
+  elim=> [m'|n'|m1 n1 m2 n2 Hmn1 Hnm1 Hmn2 Hnm2] /=; try by constructor.
+Qed.                                                   
+
+Lemma orth1m m: 1!m -> m = 0.
+Proof.
+  move=> Horth; inversion Horth; try done.
+  destruct m0, m'; simpl in *; try discriminate.
+Qed.
+
+Lemma orthm1 m: m!1 -> m = 0.
+Proof.
+  move=> Horth; inversion Horth; try done.
+  destruct n, n'; simpl in *; try discriminate.
+Qed.
+
+Lemma orthl m n: minl m ! minl n -> m ! n.
+Proof.
+  rewrite -2!mappm0l => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -!mappm0l.
+    by rewrite !mapp_injective => /andP[/eqP<-_]/andP[/eqP<-_].
+Qed.
+
+Lemma orthlc m n n': minl m ! mcons n n' -> m ! n.
+Proof.
+  rewrite -mappm0l -mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -mappm0l -mapp_mcons.
+    by rewrite !mapp_injective => /andP[/eqP<-_]/andP[/eqP<-_].
+Qed.
+
+Lemma orthcl m m' n: mcons m m' ! minl n -> m ! n.
+Proof.
+  rewrite -mappm0l -mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -mappm0l -mapp_mcons.
+    by rewrite !mapp_injective => /andP[/eqP<-_]/andP[/eqP<-_].
+Qed.
+
+Lemma orthr m n: minr m ! minr n -> m ! n.
+Proof.
+  rewrite -2!mapp0mr => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -!mapp0mr.
+    by rewrite !mapp_injective => /andP[_/eqP<-]/andP[_/eqP<-].
+Qed.
+
+Lemma orthrc m n n': minr m ! mcons n' n -> m ! n.
+Proof.
+  rewrite -mapp0mr -mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -mapp0mr -mapp_mcons.
+    by rewrite !mapp_injective => /andP[_/eqP<-]/andP[_/eqP<-].
+Qed.
+
+Lemma orthcr m m' n: mcons m' m ! minr n -> m ! n.
+Proof.
+  rewrite -mapp0mr -mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -mapp0mr -mapp_mcons.
+    by rewrite !mapp_injective => /andP[_/eqP<-]/andP[_/eqP<-].
+Qed.
+
+Lemma orthccl m m' n n': mcons m m' ! mcons n n' -> m ! n.
+Proof.
+  rewrite -!mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -!mapp_mcons.
+  by rewrite !mapp_injective => /andP[/eqP<-_]/andP[/eqP<-_].
+Qed.
+
+Lemma orthccr m m' n n': mcons m m' ! mcons n n' -> m' ! n'.
+Proof.
+  rewrite -!mapp_mcons => H; inversion H.
+  move: H1 => /eqP; move: H0 => /eqP; rewrite -!mapp_mcons.
+  by rewrite !mapp_injective => /andP[_/eqP<-]/andP[_/eqP<-].
+Qed.
+
+Fixpoint orthb1 (m n: map1) :=
+  match m, n with
+    | mcons m1 _, minl n1
+    | minl m1, mcons n1 _
+    | minl m1, minl n1 => orthb1 m1 n1
+
+    | mcons _ m2, minr n2
+    | minr m2, mcons _ n2
+    | minr m2, minr n2 => orthb1 m2 n2
+
+    | mcons m1 m2, mcons n1 n2 => orthb1 m1 n1 && orthb1 m2 n2
+
+    | minl _, minr _ | minr _, minl _ => true
+    | _, _ => false
+  end.
+Functional Scheme orthb1_ind := Induction for orthb1 Sort Prop.
+Functional Scheme orthb1_rect := Induction for orthb1 Sort Type.
+
+Lemma orthb1_symm m n: orthb1 m n = orthb1 n m.
+Proof.
+  elim/orthb1_ind: m n /(orthb1 m n) => m n /=; try by case: n.
+    by move=> m1 m2 _ n1 n2 _ -> ->.
+Qed.
+
+Definition orthb (m n: map) :=
+  match m, n with
+    | 0, _ => true
+    | _, 0 => true
+    | mmap m', mmap n' => orthb1 m' n'
+  end.
+Functional Scheme orthb_ind := Induction for orthb Sort Prop.
+Functional Scheme orthb_rect := Induction for orthb Sort Type.
+
+Lemma orthbm0 m: orthb m 0.
+Proof. by case: m. Qed.
+
+Lemma orthb0m m: orthb 0 m.
+Proof. by []. Qed.
+
+Lemma orthb_symm m n: orthb m n = orthb n m.
+Proof.
+  elim/orthb_ind: m n /(orthb m n) => m n //=.
+  - by rewrite orthbm0.
+  - move=> m' _ n' _; apply orthb1_symm.
+Qed.
+
+Lemma orthb1P (m1 n1: map1): reflect (m1!n1) (orthb1 m1 n1).
+Proof.
+  (* elim/orthb1_ind: m1 n1 /(orthb1 m1 n1). *)
+  (* Toplevel input, characters 0-38: *)
+  (* > elim/orthb1_ind: m1 n1 /(orthb1 m1 n1). *)
+  (* > ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ *)
+  (* Anomaly: Uncaught exception Reduction.NotConvertible. Please report. *)
+  elim/orthb1_rect: m1 n1 /(orthb1 m1 n1) => m0 n0 //=.
+  - move=> _; right; move=> /orth1m H; discriminate.
+  - move=> m1 _{m0} _; right; move=> /orth_symm /orth1m; discriminate.
+  - move=> m1 _{m0} n1 _{n0} [Hor|Hnor].
+    + by left; rewrite -2!mappm0l; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthl.
+  - move=> m1 _{m0} n1 _{n0}; left;
+             by rewrite -mappm0l -mapp0mr; constructor.
+  - move=> m1 _{m0} n1 n2 _{n0} [Hor|Hnor].
+    + by left; rewrite -mappm0l -mapp_mcons; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthlc.
+  - move=> m1 _{m0} _{n0}; right=> /orthm1 H; discriminate.
+  - move=> m1 _{m0} n1 _{n0}; left;
+             by rewrite -mappm0l -mapp0mr; constructor.
+  - move=> m1 _{m0} n1 _{n0} [Hor|Hnor].
+    + by left; rewrite -2!mapp0mr; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthr.
+  - move=> m1 _{m0} n1 n2 _{n0} [Hor|Hnor].
+    + by left; rewrite -mapp0mr -mapp_mcons; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthrc.
+  - move=> m1 m2 _{m0} _{n0}; right=> /orthm1 H; discriminate.
+  - move=> m1 m2 _{m0} n1 _{n0} [Hor|Hnor].
+    + by left; rewrite -mappm0l -mapp_mcons; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthcl.
+  - move=> m1 m2 _{m0} n1 _{n0} [Hor|Hnor].
+    + by left; rewrite -mapp0mr -mapp_mcons; apply orth_mapp.
+    + by right=> Hor; apply: Hnor; move: Hor; apply orthcr.
+  - move=> m1 m2 _{m0} n1 n2 _{n0} [Hor1|Hnor1] /=.
+    + move=> [Hor2 | Hnor2].
+      * by left; rewrite -!mapp_mcons; apply orth_mapp.
+      * right=> Hor; apply: Hnor2; move: Hor; apply orthccr.
+    + move=> _; right => Hor; apply Hnor1; move: Hor; apply orthccl.
+Qed.
+Notation "m1 !1P n1" :=
+  (orthb1P m1 n1: reflect (mmap m1!mmap n1) (orthb1 m1 n1))
+    (at level 70, no associativity).
+
+Lemma orthbP (m n: map): reflect (m!n) (orthb m n).
+Proof.
+  elim/orthb_rect: m n /(orthb m n) => m0 n0; try by left.
+  by move=> m _ n _; apply orthb1P.
+Qed.
+Notation "m !P n" := (orthbP m n: reflect (m!n) (orthb m n))
+                       (at level 70, no associativity).
 
 
 (* for interpret *)
@@ -374,22 +364,23 @@ Section Lambda.
       | abs m s', abs n t' => (m == n) && (eq_sexp s' t')
       | _, _ => false
     end.
+  Functional Scheme eq_sexp_ind := Induction for eq_sexp Sort Prop.
+  Functional Scheme eq_sexp_rect := Induction for eq_sexp Sort Type.
 
   Lemma eq_sexpP: Equality.axiom eq_sexp.
   Proof.
-    rewrite /Equality.axiom.
-    elim=> [x||s1 IHs1 s2 IHs2|m s IHs];
-      move=> [y||t1 t2|n t] //=;
-        try by constructor.
-    - by case: (x =P y); [left; subst | by right; case ].
-    - case: (IHs1 t1) => Hst1 /=.
-      + case: (IHs2 t2) => Hst2 /=; first by left; subst.
-        right; case; done.
-      + right; case; done.
-    - case: (IHs t) => Hst /=.
-      + rewrite andbT Hst; case: (m =P n) => Hmn; first by left; subst.
-          by right; case.
-      + by rewrite andbF; right; case.
+    rewrite /Equality.axiom => x y.
+    elim/eq_sexp_rect: x y /(eq_sexp x y) => x0 y0; try by constructor.
+    - by move=> x _ y _; case: (x =P y); [left; subst | by right; case ].
+    - move=> x1 x2 _{x0} y1 y2 _{y0} [->|Hneq1] /=.
+      + move=> [->|Hneq2]; try by constructor.
+        by right=> H; apply Hneq2; inversion H.
+      + move=> _.
+        by right=> H; apply Hneq1; inversion H.
+    - move=> m x _ n y _ [->|Hneq]; rewrite ?andbF ?andbT.
+      + case: (m =P n) => [->|Hneq]; try by constructor.
+        by right=> H; apply Hneq; inversion H.
+      + by right=> H; apply Hneq; inversion H.
   Defined.
 
   Canonical sexp_eqMixin := EqMixin eq_sexpP.
@@ -426,6 +417,7 @@ Section Lambda.
   | wf_mapp_app (m n: map)(s t: sexp): m#s -> n#t -> m*n#s@t
   | wf_abs (m n: map)(t: sexp): m#t -> n#t -> m!n -> m#(n\t)
   where "m # s" := (well_formed m s).
+  Hint Constructors well_formed.
 
   Fixpoint wfb (m: map)(s: sexp): bool :=
     match m, s with
@@ -439,220 +431,115 @@ Section Lambda.
       | m, abs n t => wfb m t && wfb n t && orthb m n
       | _, _ => false
     end.
+  Functional Scheme wfb_ind := Induction for wfb Sort Prop.
+  Functional Scheme wfb_rect := Induction for wfb Sort Type.
 
   Lemma wf_0 m s: m#s -> 0#s.
   Proof.
     elim=> [x||
            |m' n' s' t' IHms Hs IHnt Ht
            |m' n' t IHmt Hmt IHnt Hnt Horth] //=; try by constructor.
-    - have: (0*0 = 0); first done; move=> <-.
-        by apply wf_mapp_app.
-    - apply wf_abs; try done; by constructor.
+    have: (0*0 = 0); first done; move=> <-.
+      by apply wf_mapp_app.
+  Qed.
+  
+  Lemma mapp_00_0: 0*0 = 0. done. Qed.
+
+  Lemma wf0appl s1 s2: 0 # s1 @ s2 -> 0 # s1.
+  Proof.
+    rewrite -mapp_00_0 => H; inversion H.
+    move: H0 => /eqP; rewrite -mapp_00_0.
+    rewrite mapp_injective => /andP[Heq/eqP->].
+      by move: Heq H3 => /eqP ->.
   Qed.
 
-  Lemma mapp_00_0: 0*0 = 0. done. Qed.
+  Lemma wf0appr s1 s2: 0 # s1 @ s2 -> 0 # s2.
+  Proof.
+    rewrite -mapp_00_0 => H; inversion H.
+    move: H0 => /eqP; rewrite -mapp_00_0.
+    rewrite mapp_injective => /andP[/eqP->Heq].
+      by move: Heq H4 => /eqP ->.
+  Qed.
+
+  Lemma wfabs_inv m n t: m # n \ t -> n # t.
+  Proof.
+    by move=> H; inversion H.
+  Qed.
+
+  Lemma mapp_neq1 m n: m * n != 1.
+  Proof.
+    elim/mapp_ind: m n /(mapp m n) => m n //=.
+  Qed.
 
   Lemma wfbP m s: reflect (m#s) (wfb m s).
   Proof.
-    elim: s m => [x||s1 IHs1 s2 IHs2|n s IHs].
-    - case=> [|[|m1|m2|m1 m2]] /=;
-        try (by right; move=> H; inversion H);
-          try by left; constructor.
-    - case=> [|[|m1|m2|m1 m2]] /=;
-        try (by right; move=> H; inversion H);
-          try by left; constructor.
-    - { case=> [|[|m1|m2|m1 m2]] /=.
-        - case: (IHs1 0) => H1 /=.
-          + case: (IHs2 0) => H2 /=.
-            * by left; rewrite -mapp_00_0; apply wf_mapp_app.
-            * right; rewrite -mapp_00_0; move=> H; inversion H; subst.
-              apply H2; move: H6; apply wf_0.
-          + right; rewrite -mapp_00_0; move=> H; inversion H; subst.
-            apply H1; move: H4; apply wf_0.
-        - right; move=> H; inversion H; subst.
-          destruct m, n; discriminate.
-        - case: (IHs1 m1) => H1 /=.
-          + case: (IHs2 0) => H2 /=.
-            * by left; rewrite -mappm0l; apply wf_mapp_app.
-            * right; rewrite -mappm0l; move=> H; inversion H; subst.
-              apply H2; move: H6; apply wf_0.
-          + right; rewrite -mappm0l; move=> H; inversion H; subst.
-            rewrite -mappm0l in H0.
-            move: H0 => /eqP H0; rewrite mapp_injective in H0.
-            move: H0 => /andP [/eqP H00 /eqP H01]; subst; done.
-        - case: (IHs2 m2) => H2 /=.
-          + case: (IHs1 0) => H1 /=.
-            * by left; rewrite -mapp0mr; apply wf_mapp_app.
-            * right; rewrite -mapp0mr; move=> H; inversion H; subst.
-              apply H1; move: H5; apply wf_0.
-          + rewrite andbF; right;
-            rewrite -mapp0mr; move=> H; inversion H; subst.
-            rewrite -mapp0mr in H0.
-            move: H0 => /eqP H0; rewrite mapp_injective in H0.
-            move: H0 => /andP [/eqP H00 /eqP H01]; subst; done.
-        - case: (IHs1 m1) => H1 /=.
-          + case: (IHs2 m2) => H2 /=;
-              first by left; rewrite -mapp_mcons; apply wf_mapp_app.
-            right; rewrite -mapp_mcons; move=> H; inversion H; subst.
-            rewrite -mapp_mcons in H0.
-            move: H0 => /eqP H0; rewrite mapp_injective in H0.
-            move: H0 => /andP [/eqP H00 /eqP H01]; subst; done.
-          + right; rewrite -mapp_mcons; move=> H; inversion H; subst.
-            rewrite -mapp_mcons in H0.
-            move: H0 => /eqP H0; rewrite mapp_injective in H0.
-            move: H0 => /andP [/eqP H00 /eqP H01]; subst; done. }
-    - case=> [|[|m1|m2|m1 m2]] /=.
-      + rewrite andbT.
-        case: (IHs n) => Hn.
-        * rewrite andbT.
-          case: (IHs 0) => H0;
-            first by left; apply wf_abs; try constructor.
-          right; move=> H; inversion H; subst; done.
-        * rewrite andbF; right; move=> H; inversion H; subst; done.
-      + case: n => [|[|n1|n2|n1 n2]] /=; try rewrite andbF;
-          try (right; move=> H; inversion H; subst;
-               inversion H5; subst;
-               destruct m, m'; discriminate).
-        rewrite andbT.
-        case: (IHs 1) => H1 /=;
-          last by right; move=> H; inversion H; subst; done.
-        case: (IHs 0) => H0;
-          first by left; apply wf_abs; try constructor.
-        right; move=> H; inversion H; subst; done.
-      + case: n => [|[|n1|n2|n1 n2]] /=; try rewrite andbF.
-        * rewrite andbT.
-          case: (IHs (minl m1)) => H1 /=;
-            last by right; move=> H; inversion H; subst; done.
-          case: (IHs 0) => H0;
-            first by left; apply wf_abs; try constructor.
-          right; move=> H; inversion H; subst; done.
-        * try (right; move=> H; inversion H; subst;
-               inversion H5; subst;
-               destruct n, n'; discriminate).
-        * { case: (m1 !1P n1) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (minl m1)) => Hm1 /=.
-              + case: (IHs (minl n1)) => Hn1 /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mappm0l -mappm0l;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mappm0l -mappm0l in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-        * rewrite andbT.
-          { case: (IHs (minl m1)) => Hm1 /=.
-            - case: (IHs (minr n2)) => Hn2 /=.
-              + left; apply wf_abs; try done.
-                  by apply /orthbP.
-              + by right; move=> H; inversion H; subst.
-            - by right; move=> H; inversion H; subst. }
-        * { case: (m1 !1P n1) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (minl m1)) => Hm1 /=.
-              + case: (IHs (mcons n1 n2)) => Hn /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mapp_mcons -mappm0l;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp_mcons -mappm0l in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-      + case: n => [|[|n1|n2|n1 n2]] /=; try rewrite andbF.
-        * rewrite andbT.
-          case: (IHs (minr m2)) => H2 /=;
-            last by right; move=> H; inversion H; subst; done.
-          case: (IHs 0) => H0;
-            first by left; apply wf_abs; try constructor.
-          right; move=> H; inversion H; subst; done.
-        * try (right; move=> H; inversion H; subst;
-               inversion H5; subst;
-               destruct n, n'; discriminate).
-        * rewrite andbT.
-          { case: (IHs (minr m2)) => Hm2 /=.
-            - case: (IHs (minl n1)) => Hn1 /=.
-              + left; apply wf_abs; try done.
-                  by apply /orthbP.
-              + by right; move=> H; inversion H; subst.
-            - by right; move=> H; inversion H; subst. }
-        * { case: (m2 !1P n2) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (minr m2)) => Hm2 /=.
-              + case: (IHs (minr n2)) => Hn2 /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mapp0mr -mapp0mr;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp0mr -mapp0mr in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-        * { case: (m2 !1P n2) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (minr m2)) => Hm2 /=.
-              + case: (IHs (mcons n1 n2)) => Hn /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mapp_mcons -mapp0mr;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp_mcons -mapp0mr in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-      + case: n => [|[|n1|n2|n1 n2]] /=; try rewrite andbF.
-        * rewrite andbT.
-          case: (IHs (mcons m1 m2)) => Hm /=;
-            last by right; move=> H; inversion H; subst; done.
-          case: (IHs 0) => H0;
-            first by left; apply wf_abs; try constructor.
-          right; move=> H; inversion H; subst; done.
-        * try (right; move=> H; inversion H; subst;
-               inversion H5; subst;
-               destruct n, n'; discriminate).
-        * { case: (m1 !1P n1) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (mcons m1 m2)) => Hm /=.
-              + case: (IHs (minl n1)) => Hn1 /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mapp_mcons -mappm0l;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp_mcons -mappm0l in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-        * { case: (m2 !1P n2) => Horth1 /=.
-            - rewrite andbT.
-              case: (IHs (mcons m1 m2)) => Hm /=.
-              + case: (IHs (minr n2)) => Hn2 /=.
-                * left; apply wf_abs; try done.
-                    by rewrite -mapp_mcons -mapp0mr;
-                    apply orth_mapp; try constructor.
-                * by right; move=> H; inversion H; subst.
-              + by right; move=> H; inversion H; subst.
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp_mcons -mapp0mr in H5.
-                by move: H5 => /orthbP /= /orthb1P. }
-        * { case: (m1 !1P n1) => Horth1 /=.
-            - case: (m2 !1P n2) => Horth2 /=.
-              + rewrite andbT.
-                case: (IHs (mcons m1 m2)) => Hm /=.
-                * { case: (IHs (mcons n1 n2)) => Hn /=.
-                    - left; apply wf_abs; try done.
-                        by rewrite -mapp_mcons -mapp_mcons;
-                        apply orth_mapp; try constructor.
-                    - by right; move=> H; inversion H; subst. }
-                * by right; move=> H; inversion H; subst.
-              + rewrite andbF; right; move=> H; inversion H; subst.
-                rewrite -mapp_mcons -mapp_mcons in H5.
-                  by move: H5 => /= /orthbP /= /andP
-                                    [/orthb1P Ho1 /orthb1P Ho2].
-            - rewrite andbF; right; move=> H; inversion H; subst.
-              rewrite -mapp_mcons -mapp_mcons in H5.
-                by move: H5 => /= /orthbP /= /andP
-                                  [/orthb1P Ho1 /orthb1P Ho2]. }
+    elim/wfb_rect: m s /(wfb m s) => m0 s0;
+      try (by right; move=> H; inversion H);
+      try (by move=> *; match goal with |- reflect ?x true => left end).
+    - move=> _ s1 s2 _ [Hwf1|Hnwf1] /=.
+      + move=> [Hwf2|Hnwf2];
+          first by left; rewrite -mapp_00_0; try constructor.
+          by right=> H; apply: Hnwf2; move: H; apply wf0appr.
+      + move=> _; by right=> H; apply: Hnwf1; move: H; apply wf0appl.
+    - move=> -> n t _ /=; rewrite andbT; move=> [Hwf0|Hnwf0] /=.
+      + move=> [Hwf|Hnwf] /=; first by left; constructor.
+          by right=> H; apply: Hnwf; apply wfabs_inv with 0.
+      + by move=> _; right=> H; apply: Hnwf0; inversion H.
+    - move=> m _ _{m} s1 s2 _{s0}; right => H; inversion H.
+      destruct m, n; discriminate.
+    - move=> m -> -> {m0} n s _.
+      move=> [Hwf1|Hnwf1]; first rewrite orthb_symm; move=> /=.
+      + move=> [Hwf|Hnwf] //=.
+        * case: (orthbP n 1) => [Hor|Hnor];
+            first by left; apply wf_abs => //; apply orth_symm.
+          by right=> H; apply: Hnor; inversion H; subst; apply orth_symm.
+        * by right=> H; apply: Hnwf; inversion H; subst.
+      + by move=> _; right=> H; apply: Hnwf1; inversion H; subst.
+    - move=> m1 _{m0} m _{m1} s1 s2 _.
+      case=> [Hwf1|Hnwf1] /=; last (move=> _; right=> H; apply: Hnwf1; inversion H; subst).
+      + move=> [Hwf2|Hnwf2] /=; first by left; rewrite -mappm0l; constructor.
+        right=> H; apply: Hnwf2; inversion H; subst.
+        move: H0 H4; rewrite -mappm0l => /eqP; rewrite mapp_injective.
+          by move=>/andP[_/eqP->].
+      + move: H0 H3; rewrite -mappm0l => /eqP; rewrite mapp_injective.
+          by move=>/andP[/eqP->_].
+    - move=> m' ->{m0} m ->{m'} n s _{s0}.
+      case=> [Hwfl|Hnwfl]; last by (move=> _; right=> H; apply: Hnwfl; inversion H; subst).
+      case=> [Hwf|Hnwf]; first rewrite orthb_symm /=.
+      + case: (orthbP n (minl m)) => [Hor|Hnor];
+          first by left; apply wf_abs => //; apply orth_symm.
+          by right=> H; apply: Hnor; inversion H; subst; apply orth_symm.
+      + by right=> H; apply: Hnwf; inversion H; subst.
+    - move=> m1 _{m0} m _{m1} s1 s2 _{s0}.
+      case=> [Hwf1|Hnwf1] /=; last (move=> _; right=> H; apply: Hnwf1; inversion H; subst).
+      + move=> [Hwf2|Hnwf2] /=; first by left; rewrite -mapp0mr; constructor.
+        right=> H; apply: Hnwf2; inversion H; subst.
+        move: H0 H4; rewrite -mapp0mr => /eqP; rewrite mapp_injective.
+          by move=>/andP[_/eqP->].
+      + move: H0 H3; rewrite -mapp0mr => /eqP; rewrite mapp_injective.
+          by move=>/andP[/eqP->_].
+    - move=> m1 ->{m0} m ->{m1} n s _{s0}.
+      case=> [Hwfl|Hnwfl]; last by (move=> _; right=> H; apply: Hnwfl; inversion H; subst).
+      case=> [Hwf|Hnwf]; first rewrite orthb_symm /=.
+      + case: (orthbP n (minr m)) => [Hor|Hnor];
+          first by left; apply wf_abs => //; apply orth_symm.
+          by right=> H; apply: Hnor; inversion H; subst; apply orth_symm.
+      + by right=> H; apply: Hnwf; inversion H; subst.
+    - move=> m1 _{m0} m n _{m1} s1 s2 _{s0}.
+      case=> [Hwf1|Hnwf1] /=; last (move=> _; right=> H; apply: Hnwf1; inversion H; subst).
+      + move=> [Hwf2|Hnwf2] /=; first by left; rewrite -mapp_mcons; constructor.
+        right=> H; apply: Hnwf2; inversion H; subst.
+        move: H0 H4; rewrite -mapp_mcons => /eqP; rewrite mapp_injective.
+          by move=>/andP[_/eqP->].
+      + move: H0 H3; rewrite -mapp_mcons => /eqP; rewrite mapp_injective.
+          by move=>/andP[/eqP->_].
+    - move=> m1 ->{m0} m n ->{m1} n' s _{s0}.
+      case=> [Hwfl|Hnwfl]; last by (move=> _; right=> H; apply: Hnwfl; inversion H; subst).
+      case=> [Hwf|Hnwf]; first rewrite orthb_symm /=.
+      + case: (orthbP n' (mcons m n)) => [Hor|Hnor];
+          first by left; apply wf_abs => //; apply orth_symm.
+          by right=> H; apply: Hnor; inversion H; subst; apply orth_symm.
+      + by right=> H; apply: Hnwf; inversion H; subst.
   Qed.
   Notation "m #P s" := (wfbP m s: reflect (m#s) (wfb m s))
                          (at level 70, no associativity): map_scope.
@@ -664,6 +551,7 @@ Section Lambda.
   | lbox: isL box
   | lapp (s t: sexp): isL s -> isL t -> isL (s@t)
   | labs (m: map)(s: sexp): isL s -> m#s -> isL (m\s).
+  Hint Constructors isL.
 
   Fixpoint isLb (s: sexp): bool :=
     match s with
@@ -671,44 +559,64 @@ Section Lambda.
       | app s1 s2 => isLb s1 && isLb s2
       | abs m s => isLb s && wfb m s
     end.
+  Functional Scheme isLb_ind := Induction for isLb Sort Prop.
+  Functional Scheme isLb_rect := Induction for isLb Sort Type.
 
   Lemma isLbP s: reflect (isL s) (isLb s).
   Proof.
-    elim: s => [x||s1 IH1 s2 IH2|m s IHs] /=.
-    - left; by constructor.
-    - left; by constructor.
-    - case: IH1 => H1 /=.
-      + case: IH2 => H2 /=.
-        * left; by constructor.
-        * by right; move=> H; inversion H; subst.
-      + by right; move=> H; inversion H; subst.
-    - case: IHs => Hs /=.
-      + case: (m #P s) => Hwf /=.
-        * left; by constructor.
-        * by right; move=> H; inversion H; subst.
-      + by right; move=> H; inversion H; subst.
+    elim/isLb_rect: s /(isLb s) => s0;
+      try (by move=> *; match goal with |- reflect ?x true => left end).
+    - move=> s1 s2 _{s0} [HL1|HnL1] /=;
+        last by move=> _; right=> H; apply: HnL1; inversion H; subst.
+        by case=> [HL2|HnL2] /=; first (left; constructor);
+             last (right=> H; apply: HnL2; inversion H; subst).
+    - move=> m s _{s0} [HL|HnL] /=;
+        last by right=> H; apply: HnL; inversion H; subst.
+        by case: (m #P s) => [Hwf|Hnwf]; first (left; constructor);
+             last (right=> H; apply: Hnwf; inversion H; subst).
   Qed.
   
-  Structure lambda := Lam { term : sexp ; _: isLb term }.
-  Canonical lambda_subType := Eval hnf in [subType for @term].
-  Local Coercion term: lambda >-> sexp.
-  Check lambda.
+  Inductive lambda: Type :=
+  | Lam (term: sexp): isLb term -> lambda.
+  Hint Constructors lambda.
+  Definition body: lambda -> sexp :=
+    fun M => let (s,_) := M in s.
+  Canonical lambda_subType := Eval hnf in [subType for @body].
+  Local Coercion body: lambda >-> sexp.
+
+  Lemma isL_wf (s: sexp): isL s -> 0#s.
+  Proof.
+    elim=> [x||s1 IH1 s2 IH2|m s' IHs] /=; try by constructor.
+    move=> HisL Hwf; rewrite -mapp_00_0; apply wf_mapp_app; done.
+  Qed.
 
   Lemma lambda_is_wf (M: lambda): 0#M.
   Proof.
     move: M => [s Hlam] /=.
-    move: Hlam => /isLbP; elim=> [x||s1 IH1 s2 IH2|m s' IHs] /=;
-      try by constructor.
-    - move=> HisL Hwf.
-      rewrite -mapp_00_0; apply wf_mapp_app; done.
-    - move=> Hwf Hwf'; apply wf_abs; try (by constructor); try done.
+    move: Hlam => /isLbP; apply isL_wf.
   Qed.
+
+  Lemma wf_sexp_is_lambda (s: sexp): 0#s -> isL s.
+  Proof.
+    move=> H; apply/isLbP; move: H.
+    elim/isLb_ind: s /(isLb s) => s0 //.
+    - move=> s1 s2 _ H1 H2 H.
+      by move: (H1 (wf0appl H)) (H2 (wf0appr H))=> -> ->.
+    - move=> m s _ HL H; apply/andP; split.
+      + inversion H; subst.
+        by move: (HL H2) => ->.
+      + by apply/wfbP; apply wfabs_inv with 0.
+  Qed.
+
+  Definition asL (s: sexp): 0#s -> lambda :=
+    fun H => Lam (introT (isLbP s) (wf_sexp_is_lambda H)).
+
 End Lambda.
 
 (* lambda is subType of sexp *)
 
 Open Scope map_scope.
-Coercion term: lambda >-> sexp.
+Coercion body: lambda >-> sexp.
 Infix "@" := app (at level 25, left associativity): map_scope.
 Infix "\" := abs (at level 35, right associativity): map_scope.
 Notation "m # s" := (well_formed m s)
